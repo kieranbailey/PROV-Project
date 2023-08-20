@@ -11,11 +11,12 @@
     <div class="container">
         <h1 class="mt-4">Available Images</h1>
 
-        <!-- Dropdown to select series_id -->
+        <!-- Filter by Series ID -->
         <form action="/" method="get" class="mb-4">
-            <label for="series_id">Select Series ID:</label>
+            <label for="series_id">Filter by Series ID:</label>
             <select id="series_id" name="series_id" class="form-select" onchange="this.form.submit()">
-                {% for series_id in series_id_options %}
+                <option value="">All Series</option>
+                {% for series_id in available_series_ids %}
                     <option value="{{ series_id }}" {% if series_id == selected_series %}selected{% endif %}>{{ series_id }}</option>
                 {% endfor %}
             </select>
@@ -28,6 +29,7 @@
                     <label>
                         <input type="checkbox" name="selected_images" value="{{ item['_id'] }}" class="form-check-input">
                         <img src="{{ item['iiif-thumbnail'] }}" alt="Thumbnail" class="img-thumbnail">
+                        <p class="image-title">{{ item['title'] }}</p>
                     </label>
                 </div>
                 {% endfor %}

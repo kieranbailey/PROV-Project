@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, send_file, redirect, url_for
 
 app = Flask(__name__)
 
-# Updated API URL
+# API URL
 api_url = "https://api.prov.vic.gov.au/search/query?wt=json&q=(series_id%3A(12800))%20AND%20((record_form%3A%22Photograph%20or%20Image%22))%20AND%20(iiif-manifest%3A(*))"
 
 # Original image dimensions in the URL
@@ -21,27 +21,41 @@ os.makedirs(image_directory, exist_ok=True)
 # Route to display the list of images
 @app.route("/", methods=["GET"])
 def index():
+    api_url = "https://api.prov.vic.gov.au/search/query?wt=json&q=(series_id%3A(12800))%20AND%20((record_form%3A%22Photograph%20or%20Image%22))%20AND%20(iiif-manifest%3A(*))"
+    
     response = requests.get(api_url)
     if response.status_code == 200:
         json_data = response.json()
         image_items = json_data.get("response", {}).get("docs", [])
         
-        # Extract series_id options
-        series_id_options = list(set(item.get("series_id", "") for item in image_items if item.get("series_id")))
+        # Extract available series IDs from the response
+        available_series_ids = list(set(item.get("series_id", "N/A") for item in image_items))
+        
+        selected_series = request.args.get("series_id", "")  # Default to no filter
+        
+        if selected_series:
+            filtered_items = [item for item in image_items if item.get("series_id") == selected_series]
+        else:
+            filtered_items = image_items
         
         download_successful = request.args.get("download_successful")
-        return render_template("index.html", image_items=image_items, series_id_options=series_id_options, download_successful=download_successful)
+        return render_template(
+            "index.html",
+            image_items=filtered_items,
+            available_series_ids=available_series_ids,
+            selected_series=selected_series,
+            download_successful=download_successful
+        )
     else:
         return "API request failed."
+
 
 # Route to download selected images
 @app.route("/download", methods=["POST"])
 def download_images():
     selected_image_ids = request.form.getlist("selected_images")
-    selected_series_id = request.form.get("selected_series")
 
-    api_url_with_series = f"{api_url}&fq=(series_id%3A({selected_series_id}))"
-    response = requests.get(api_url_with_series)
+    response = requests.get(api_url)
     if response.status_code == 200:
         json_data = response.json()
         image_items = json_data.get("response", {}).get("docs", [])
